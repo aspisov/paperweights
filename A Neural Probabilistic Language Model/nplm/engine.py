@@ -16,7 +16,20 @@ def train_step(
     optimizer: torch.optim.Optimizer,
     device: torch.device,
 ) -> float:
+    """
+    Trains a PyTorch model for one step using the given data loader, loss function, optimizer, and device.
 
+    Parameters:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        dataloader (torch.utils.data.DataLoader): The data loader containing the training data.
+        loss_fn (torch.nn.Module): The loss function used to calculate the loss.
+        optimizer (torch.optim.Optimizer): The optimizer used to update the model's parameters.
+        device (torch.device): The device (CPU or GPU) on which the training will be performed.
+
+    Returns:
+        float: The average loss per batch.
+
+    """
     # Put model in train mode
     model.train()
 
@@ -55,7 +68,18 @@ def eval_model(
     loss_fn: torch.nn.Module,
     device: torch.device,
 ) -> float:
+    """
+    Evaluates the model using the provided data loader and loss function.
 
+    Parameters:
+        model (torch.nn.Module): The model to be evaluated.
+        dataloader (torch.utils.data.DataLoader): The data loader containing evaluation data.
+        loss_fn (torch.nn.Module): The loss function used to calculate the evaluation loss.
+        device (torch.device): The device (CPU or GPU) on which the evaluation will be performed.
+
+    Returns:
+        float: The average evaluation loss.
+    """
     # Put model in eval mode
     model.eval()
 
@@ -90,7 +114,21 @@ def train(
     epochs: int,
     device: torch.device,
 ):
+    """
+    Trains a PyTorch model using the given data loaders, optimizer, loss function, number of epochs, and device.
 
+    Parameters:
+        model (torch.nn.Module): The PyTorch model to be trained.
+        train_dataloader (torch.utils.data.DataLoader): The data loader containing the training data.
+        dev (torch.utils.data.DataLoader): The data loader containing the development data.
+        optimizer (torch.optim.Optimizer): The optimizer used to update the model's parameters.
+        loss_fn (torch.nn.Module): The loss function used to calculate the loss.
+        epochs (int): The number of epochs to train the model.
+        device (torch.device): The device (CPU or GPU) on which the training will be performed.
+
+    Returns:
+        None
+    """
     # Loop through training and testing steps for a number of epochs
     for epoch in tqdm(range(epochs)):
         train_loss = train_step(

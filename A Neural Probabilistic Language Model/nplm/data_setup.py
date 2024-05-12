@@ -1,3 +1,7 @@
+"""
+data_setup.py is used to load and prepare data for the NPLM model. 
+It loads brown corpus which was used in the original paper.
+"""
 import torch
 from torch.utils.data import DataLoader, Dataset
 
@@ -10,8 +14,7 @@ from nltk.corpus import brown
 class BrownDataset(Dataset):
     def __init__(self, words, context_size, vocab):
         super().__init__()
-        # Pad the start of the text with context_size padding tokens (PAD index = 0).
-        context = [0] * context_size  # Assuming PAD index is 0
+        context = [0] * context_size
 
         self.vocab = vocab
         self.X, self.y = [], []
@@ -77,19 +80,24 @@ def create_vocab(file_path):
         [w.lower() for w in brown.words()]
     )  # Convert to lowercase
     vocab = [w for w in frequency if frequency[w] >= 5]
-    vocab = {w: i for i, w in enumerate(vocab)}  # Start indexing from 1
-    vocab["<UNK>"] = len(vocab)  # Unique index for unknown words
+    vocab = {w: i for i, w in enumerate(vocab)}
+    vocab["<UNK>"] = len(vocab)
     save_vocab(vocab, file_path)
 
 
 def load_data(context_size, vocab_file):
     """
     Load data and prepare dataloaders for the Brown Corpus.
-    :param context_size: Size of the context window for the model.
-    :param data_percentage: Fraction of the data to use.
-    :param vocab_file: Path including directory to the vocabulary file.
-    :returns: Tuple of DataLoaders for train, validation, and test datasets.
-    """
+    
+    Parameters:
+        context_size (int): Size of the context window for the model.
+        vocab_file (str): Path including directory to the vocabulary file.
+        
+    Returns:
+        tuple: A tuple containing two DataLoaders: train_dataloader and dev_dataloader.
+            train_dataloader (DataLoader): DataLoader for the training dataset.
+            dev_dataloader (DataLoader): DataLoader for the development dataset.
+    """    
     nltk.download("brown")
 
     dataset = [w.lower() for w in brown.words()[: len(brown.words())]]

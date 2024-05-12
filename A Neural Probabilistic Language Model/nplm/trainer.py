@@ -1,3 +1,6 @@
+"""
+trainer.py contains the code for training and saving the model.
+"""
 import torch
 import torch.nn as nn
 

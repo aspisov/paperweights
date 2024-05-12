@@ -1,3 +1,7 @@
+"""
+model.py contains the code for the NPLM model.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,6 +17,27 @@ class Config:
 
 class NeuralProbabilisticLanguageModel(nn.Module):
     def __init__(self, config: Config):
+        """
+        Initializes a NeuralProbabilisticLanguageModel object.
+
+        Args:
+            config (Config): The configuration object containing the necessary parameters for the model.
+
+        Initializes the following attributes:
+            - embed_size (int): The size of the embeddings.
+            - context_size (int): The size of the context.
+            - direct (bool): Whether to use direct connections.
+            - C (nn.Embedding): The embedding layer.
+            - H (nn.Linear): The hidden layer.
+            - tanh (nn.Tanh): The tanh activation function.
+            - U (nn.Linear): The output layer.
+            - W (nn.Linear, optional): The linear layer for direct connections.
+
+        Calls the following methods:
+            - _init_weights: Initializes all weights in the model.
+
+        Prints the number of parameters in the model.
+        """
         super().__init__()
         self.embed_size = config.embed_size
         self.context_size = config.context_size
@@ -33,6 +58,15 @@ class NeuralProbabilisticLanguageModel(nn.Module):
         print(f"number of parameters: {self.get_num_params()/1e6:.2f}M")
 
     def forward(self, x):
+        """
+        Performs the forward pass of the neural network model.
+
+        Args:
+            x (torch.Tensor): The input data tensor.
+
+        Returns:
+            torch.Tensor: The output logits of the model.
+        """
         x = self.C(x.to(torch.long))  # Convert input tokens to embeddings
         x = x.view(-1, self.context_size * self.embed_size)  # Flatten for linear layers
         
