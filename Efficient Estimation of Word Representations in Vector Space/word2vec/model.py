@@ -1,54 +1,84 @@
 # CBOW and SkipGram models
 import torch
 import torch.nn as nn
-import torch.nn.functional as F    
-    
+import torch.nn.functional as F
+
+
+# base model
 # ----------------------------------
-class CBOW(torch.nn.Module):
+class Word2Vec(torch.nn.Module):
+    def print_num_params(self):
+        n = sum(p.numel() for p in self.parameters())
+        print(f"number of parameters: {n / 1e6:.2f}M")
+
+
+# ----------------------------------
+class CBOW(Word2Vec):
 
     def __init__(self, vocab_size, embedding_dim):
         super().__init__()
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
         self.linear = nn.Linear(embedding_dim, vocab_size)
 
-        # Report number of parameters
-        print(f"number of parameters: {self.get_num_params() / 1e6:.2f}M")
+        self.print_num_params()
 
     def forward(self, context_words):
         context_embeddings = self.embeddings(context_words).mean(dim=1)
         scores = self.linear(context_embeddings)
         return scores
 
-    def get_num_params(self):
-        # Return the total number of parameters in the model
-        return sum(p.numel() for p in self.parameters())
-    
 
-# SkipGram
-# ----------------------------------
-class SkipGram(torch.nn.Module):
-
-    def __init__(self, vocab_size, embedding_dim):
+class SkipGramNeg(Word2Vec):
+    def __init__(self, n_vocab, n_embed, noise_dist=None):
         super().__init__()
-        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.linear = nn.Linear(embedding_dim, vocab_size)
 
-        # Report number of parameters
-        print(f"number of parameters: {self.get_num_params() / 1e6:.2f}M")
+        self.n_vocab = n_vocab
+        self.n_embed = n_embed
+        self.noise_dist = noise_dist
 
-    def forward(self, x):
-        embed = self.embeddings(x)
-        return self.linear(embed)
+        self.in_embed = nn.Embedding(n_vocab, n_embed)
+        self.out_embed = nn.Embedding(n_vocab, n_embed)
 
-    def get_num_params(self):
-        # Return the total number of parameters in the model
-        return sum(p.numel() for p in self.parameters())
+        # Initialize both embedding tables with uniform distribution
+        self.in_embed.weight.data.uniform_(-1, 1)
+        self.out_embed.weight.data.uniform_(-1, 1)
+
+        self.print_num_params()
+
+    def forward_center(self, input_words):
+        input_vectors = self.in_embed(input_words)
+        return input_vectors  # input vector embeddings
+
+    def forward_context(self, output_words):
+        output_vectors = self.out_embed(output_words)
+        return output_vectors  # output vector embeddings
 
 
+class NegLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
 
+    def forward(self, input_vectors, output_vectors, noise_vectors):
 
+        batch_size, embed_size = input_vectors.shape
 
+        input_vectors = input_vectors.view(
+            batch_size, embed_size, 1
+        )  # batch of column vectors
+        output_vectors = output_vectors.view(
+            batch_size, 1, embed_size
+        )  # batch of row vectors
 
+        # correct log-sigmoid loss
+        out_loss = torch.bmm(output_vectors, input_vectors).sigmoid().log().squeeze()
+
+        # incorrect log-sigmoid loss
+        noise_loss = torch.bmm(noise_vectors.neg(), input_vectors).sigmoid().log()
+        noise_loss = noise_loss.squeeze().sum(
+            1
+        )  # sum the losses over the sample of noise vectors
+
+        return -(out_loss + noise_loss).mean()  # average batch loss
 
 
 # Hierarchical Softmax
@@ -118,6 +148,7 @@ class HierarchicalSoftmax(nn.Module):
 
 
 # ----------------------------------
+
 
 # Hierarchical Softmax with CBOW
 class HS_CBOW(torch.nn.Module):
