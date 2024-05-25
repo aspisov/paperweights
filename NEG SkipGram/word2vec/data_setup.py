@@ -11,14 +11,16 @@ import random
 import numpy as np
 
 class SkipGramDataset(Dataset):
-    def __init__(self, tokenized_articles, vocab, context_size):
+    def __init__(self, tokenized_articles, vocab, context_size, word_prob):
         self.word_to_idx = vocab
         self.idx_to_word = {v: k for k, v in vocab.items()}
+        self.word_prob = word_prob
         self.target = []
         self.context = []
         for tokens in tokenized_articles:
             token_ids = encode(tokens, vocab)
             self.generate_samples(token_ids, context_size)
+        print(f"Generated {len(self.target)/1e6:.2f}M training samples")
             
     # Generate training samples with context windows
     def generate_samples(self, ids, context_size):
@@ -28,20 +30,15 @@ class SkipGramDataset(Dataset):
 
         for i in range(context_size, len(padded_ids) - context_size):
             target = padded_ids[i]
-            context = (padded_ids[i - context_size : i]+ padded_ids[i + 1 : i + 1 + context_size])
+            # Apply subsampling
+            if random.random() > self.word_prob.get(target, 1.0):
+                continue
+            context = (padded_ids[i - context_size : i] + padded_ids[i + 1 : i + 1 + context_size])
             self.target.extend([target] * len(context))
             self.context.extend(context)
     
     def __len__(self):
-        return len(self.target)    
-    
-    def get_negative_samples(self, context_word_idx, num_samples):
-        negative_samples = []
-        while len(negative_samples) < num_samples:
-            neg_sample = random.randint(0, len(self.word_to_idx) - 1)
-            if neg_sample != context_word_idx:
-                negative_samples.append(neg_sample)
-        return negative_samples    
+        return len(self.target)  
     
     def __getitem__(self, idx):
         return torch.tensor(self.target[idx], dtype=torch.long), torch.tensor(self.context[idx], dtype=torch.long)
@@ -70,6 +67,13 @@ def generate_noise_distribution(token_counter):
     noise_dist = torch.from_numpy(unigram_dist / Z)
     return noise_dist
 
+def calculate_word_probabilities(token_counter, total_tokens, threshold=1e-5):
+    word_prob = {}
+    for word, count in token_counter.items():
+        frequency = count / total_tokens
+        word_prob[word] = min((np.sqrt(frequency / threshold) + 1) * (threshold / frequency), 1.0)
+    return word_prob
+
 # Load and preprocess the dataset
 def load_and_preprocess_data(vocab_size, amount_of_articles=None):
     nltk.download('punkt')
@@ -90,8 +94,6 @@ def load_and_preprocess_data(vocab_size, amount_of_articles=None):
     for tokens in tokenized_articles:
         token_counter.update(tokens)
         total_tokens += len(tokens)
-        
-    print(f"Total tokens: {total_tokens / 1e6:.2f}M")
 
     # Select the most common tokens
     most_common_tokens = token_counter.most_common(vocab_size - 2)
@@ -103,13 +105,20 @@ def load_and_preprocess_data(vocab_size, amount_of_articles=None):
     vocab["<PAD>"] = 0
     vocab["<UNK>"] = 1
 
-    return tokenized_articles, vocab, noise_dist
+    word_prob = calculate_word_probabilities(token_counter, total_tokens)
+    word_idx_prob = {vocab[word]: prob for word, prob in word_prob.items() if word in vocab}
+    return tokenized_articles, vocab, noise_dist, word_idx_prob
 
 def load_skipgram_data(vocab_size, context_size, amount_of_articles=None):
-    tokenized_articles, vocab, noise_dist = load_and_preprocess_data(vocab_size, amount_of_articles)
-    return SkipGramDataset(tokenized_articles, vocab, context_size), noise_dist
+    tokenized_articles, vocab, noise_dist, word_prob = load_and_preprocess_data(vocab_size, amount_of_articles)
+    return SkipGramDataset(tokenized_articles, vocab, context_size, word_prob), noise_dist
+
 
 # Create data loaders
 def create_data_loaders(dataset, batch_size):
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     return dataloader
+
+def generate_negative_samples(n_samples, noise_dist, batch_size):            
+    noise_words = torch.multinomial(input = noise_dist, num_samples = batch_size * n_samples, replacement = True)
+    return noise_words.view(batch_size, n_samples)

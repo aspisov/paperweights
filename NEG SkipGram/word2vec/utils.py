@@ -2,20 +2,46 @@
 Contains various utility functions for word2vec: save embeddings, load embeddings, and plot embeddings.
 """
 
+import torch
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 # Save the embeddings from the model to a txt file
-def save_embeddings(model, vocab, file_path):
+def save_embeddings(model, vocab, file_name, verbose=False):
+    # Create target directory
+    target_dir_path = Path("data")
+    target_dir_path.mkdir(parents=True, exist_ok=True)
+    
+    embed_save_path = target_dir_path / file_name
+    if verbose:
+        print(f"[INFO] Saving embeddings to: {embed_save_path}")
+    
     embeddings = model.input_embeddings.weight.data.cpu().numpy()
     words = vocab
 
-    with open(file_path, "w") as f:
+    with open(embed_save_path, "w") as f:
         for word, vector in zip(words, embeddings):
             vector_str = " ".join(map(str, vector))
             f.write(f"{word} {vector_str}\n")
+            
+def save_checkpoint(model, model_name, verbose=False):
+    # Create target directory
+    target_dir_path = Path("checkpoints")
+    target_dir_path.mkdir(parents=True, exist_ok=True)
+
+    # Create model save path
+    assert model_name.endswith(".pth") or model_name.endswith(
+        ".pt"
+    ), "model_name should end with '.pt' or '.pth'"
+    model_save_path = target_dir_path / model_name
+    
+    # Save the model state_dict()
+    if verbose:
+        print(f"[INFO] Saving model to: {model_save_path}")
+    torch.save(obj=model.state_dict(), f=model_save_path)
 
 
 # Load the embeddings from a txt file
@@ -52,6 +78,21 @@ def plot_embeddings(embeddings, words):
     plt.grid(False)  # Remove grid
     plt.axis("off")
     plt.show()
+    
+def get_k_most_similar_words(word, embeddings, words, k=5):
+    word_index = words.index(word)
+    word_embedding = embeddings[word_index]
+    
+    similarity_scores = np.dot(embeddings, word_embedding) / (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(word_embedding))
+    # Set the similarity score of the word itself to -inf
+    similarity_scores[word_index] = -np.inf
+    
+    most_similar_indices = np.argsort(similarity_scores)[::-1][:k]
+    most_similar_words = [words[i] for i in most_similar_indices]
+    return most_similar_words
+
+def cosine_similarity(vector1, vector2):
+    return np.dot(vector1, vector2) / (np.linalg.norm(vector1) * np.linalg.norm(vector2))
     
 def get_list_of_interesting_words():
     interesting_words = [

@@ -1,4 +1,4 @@
-# Neural Probabilistic Language Model (NPLM) Reimplementation
+# Neural Probabilistic Language Model (reimplementation)
 
 This project is a reimplementation of the classic [Neural Probabilistic Language Model](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf) using PyTorch, aimed at exploring the foundational techniques in language modeling.
 
