@@ -97,29 +97,42 @@ class Word2Vec:
     def __init__(
         self,
         sentences,
-        vector_size=100,
+        vector_size=32,
         window=5,
         min_count=5,
         negative=5,
         epochs=5,
-        batch_size=16,
+        batch_size=32,
+        learning_rate=0.025,
     ):
+        # set hyperparameters
         self.vector_size = vector_size
         self.window = window
         self.min_count = min_count
         self.negative = negative
         self.epochs = epochs
         self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        
+        # set device
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        elif torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+        else:
+            self.device = torch.device("cpu")
 
+        # prepare data
         self.vocab, self.word_freqs = self._build_vocab(sentences)
         self.vocab_size = len(self.vocab)
         self.data = self._prepare_data(sentences)
 
         print(f"Vocabulary size: {self.vocab_size}")
         print(f"Data size: {len(self.data)}")
-        print(f"Max word index in data: {max(self.data)}")
 
+        # build model and train model
         self.model = Word2VecModel(self.vocab_size, self.vector_size)
+        self.model.to(self.device)
         self._train()
 
     def _build_vocab(self, sentences):
@@ -158,11 +171,19 @@ class Word2Vec:
         dataloader = DataLoader(
             dataset, batch_size=self.batch_size, shuffle=True
         )
-        optimizer = optim.Adam(self.model.parameters())
+        optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer, step_size=1, gamma=0.9999
+        )
 
         for epoch in range(self.epochs):
             total_loss = 0
             for center_word, context_words, negative_words in tqdm(dataloader):
+                # move to device
+                center_word = center_word.to(self.device)
+                context_words = context_words.to(self.device)
+                negative_words = negative_words.to(self.device)
+
                 optimizer.zero_grad()
 
                 # forward
@@ -180,6 +201,7 @@ class Word2Vec:
                 optimizer.step()
                 total_loss += loss.item()
 
+            scheduler.step()
             print(f"Epoch {epoch + 1} Loss: {total_loss / len(dataloader):.4f}")
 
     @property
