@@ -1,6 +1,6 @@
 # paperweights
 
-![paperweights](infinity_stones.png)
+![paperweights](infinity_stones.jpeg)
 
 Paperweights is a repository dedicated to the reimplementation of interesting research papers in machine learning.
 
