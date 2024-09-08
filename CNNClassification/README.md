@@ -8,4 +8,6 @@ one learns embeddings from scratch and the other uses pre-trained embeddings.
     - was able to achive 89% test accuracy on the IMDB sentiment classification task.
 
 2. [Pre-trained approach](pre_trained.ipynb)
+    - uses 2.54M parameters model.
+    - was able to achive 89% test accuracy on the IMDB sentiment classification task.
 
