@@ -6,6 +6,7 @@ Paperweights is a repository dedicated to the reimplementation of interesting re
 
 ## Available Paper Reimplementations
 
+- [Visualizing and Understanding Recurrent Networks](LM/README.md): work in progress
 - [Convolutional Neural Networks for Sentence Classification](CNNClassification/README.md)
 - [Word2Vec](Word2Vec/README.md) 
 - [Distributed Representations of Words and Phrases and Their Compositionality](NEGSkipGram/README.md)
