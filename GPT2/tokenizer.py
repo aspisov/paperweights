@@ -5,7 +5,7 @@ from typing import List, Dict, Tuple
 
 
 class Tokenizer:
-    """Byte Pair Encoding implementation with regex pre-tokenization, save, and load functionality."""
+    """Byte Pair Encoding implementation with regex pre-tokenization, EOT special token, and save/load functionality."""
 
     INITIAL_VOCAB_SIZE = 256
 
@@ -16,10 +16,15 @@ class Tokenizer:
             text: Input text to train on. If None, the tokenizer will be initialized empty.
             vocab_size: Desired size of the vocabulary. If None, the tokenizer will be initialized empty.
         """
+        self.special_tokens = {"<|endoftext|>": 0}
+        self.special_tokens_reverse = {
+            v: k for k, v in self.special_tokens.items()
+        }
+
         if text is not None and vocab_size is not None:
-            if vocab_size <= self.INITIAL_VOCAB_SIZE:
+            if vocab_size <= self.INITIAL_VOCAB_SIZE + len(self.special_tokens):
                 raise ValueError(
-                    f"vocab_size must be greater than {self.INITIAL_VOCAB_SIZE}"
+                    f"vocab_size must be greater than {self.INITIAL_VOCAB_SIZE + len(self.special_tokens)}"
                 )
 
             self.vocab_size = vocab_size
@@ -31,6 +36,11 @@ class Tokenizer:
             }
             for pair, idx in self.merges.items():
                 self.vocab[idx] = self.vocab[pair[0]] + self.vocab[pair[1]]
+
+            # Add EOT token to vocab
+            self.vocab[self.special_tokens["<|endoftext|>"]] = (
+                "<|endoftext|>".encode("utf-8")
+            )
         else:
             self.vocab_size = None
             self.regex_pattern = None
@@ -63,7 +73,7 @@ class Tokenizer:
     def _train(self, tokens: List[int]) -> Dict[Tuple[int, int], int]:
         """Train BPE on the given tokens."""
         merges = {}
-        next_token = self.INITIAL_VOCAB_SIZE
+        next_token = self.INITIAL_VOCAB_SIZE + len(self.special_tokens)
         while next_token < self.vocab_size:
             pair = Counter(zip(tokens, tokens[1:])).most_common(1)[0][0]
             tokens = self._merge(tokens, pair, next_token)
@@ -101,13 +111,24 @@ class Tokenizer:
                     new_tokens.append(tokens[i])
                     i += 1
             if merges_count == 0:
-                return new_tokens
+                break
             tokens = new_tokens
+
+        # Add EOT token at the end
+        tokens.append(self.special_tokens["<|endoftext|>"])
+        return tokens
 
     def decode(self, token_ids: List[int]) -> str:
         """Decode a list of token IDs back into text."""
-        tokens = b"".join(self.vocab[idx] for idx in token_ids)
-        text = tokens.decode("utf-8", errors="replace")
+        tokens = []
+        for idx in token_ids:
+            if idx in self.special_tokens_reverse:
+                if idx == self.special_tokens["<|endoftext|>"]:
+                    break  # Stop decoding at EOT token
+                tokens.append(self.special_tokens_reverse[idx].encode("utf-8"))
+            else:
+                tokens.append(self.vocab[idx])
+        text = b"".join(tokens).decode("utf-8", errors="replace")
         return text
 
     def save(self, path: str):
@@ -116,6 +137,7 @@ class Tokenizer:
             "vocab_size": self.vocab_size,
             "merges": {f"{k[0]},{k[1]}": v for k, v in self.merges.items()},
             "vocab": {k: list(v) for k, v in self.vocab.items()},
+            "special_tokens": self.special_tokens,
         }
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -132,6 +154,10 @@ class Tokenizer:
             tuple(map(int, k.split(","))): v for k, v in data["merges"].items()
         }
         tokenizer.vocab = {int(k): bytes(v) for k, v in data["vocab"].items()}
+        tokenizer.special_tokens = data["special_tokens"]
+        tokenizer.special_tokens_reverse = {
+            v: k for k, v in tokenizer.special_tokens.items()
+        }
         tokenizer.regex_pattern = tokenizer._compile_regex_pattern()
 
         return tokenizer
