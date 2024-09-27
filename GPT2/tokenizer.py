@@ -4,6 +4,7 @@ from collections import Counter
 from typing import List, Dict, Tuple
 from tqdm import tqdm
 
+
 class Tokenizer:
     """Byte Pair Encoding implementation with regex pre-tokenization."""
 
@@ -19,36 +20,48 @@ class Tokenizer:
 
         if text is not None and vocab_size is not None:
             if vocab_size <= self.INITIAL_VOCAB_SIZE:
-                raise ValueError(f"vocab_size must be greater than {self.INITIAL_VOCAB_SIZE}")
+                raise ValueError(
+                    f"vocab_size must be greater than {self.INITIAL_VOCAB_SIZE}"
+                )
             self._train(text)
 
     @staticmethod
     def _compile_regex_pattern():
         """Compile the regex pattern for pre-tokenization."""
-        pat_str = "|".join([
-            r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
-            r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
-            r"\p{N}{1,3}",
-            r" ?[^\s\p{L}\p{N}]+[\r\n/]*",
-            r"\s*[\r\n]+",
-            r"\s+(?!\S)",
-            r"\s+",
-        ])
+        pat_str = "|".join(
+            [
+                r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
+                r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?",
+                r"\p{N}{1,3}",
+                r" ?[^\s\p{L}\p{N}]+[\r\n/]*",
+                r"\s*[\r\n]+",
+                r"\s+(?!\S)",
+                r"\s+",
+            ]
+        )
         return regex.compile(pat_str)
 
     def _pre_tokenize(self, text: str) -> List[int]:
         """Pre-tokenize the text using the regex pattern."""
-        return [ord(char) for match in self.regex_pattern.findall(text) for char in match]
+        return [
+            ord(char)
+            for match in self.regex_pattern.findall(text)
+            for char in match
+        ]
 
     def _train(self, text: str):
         """Train BPE on the given text."""
         tokens = self._pre_tokenize(text)
         self.vocab = {i: bytes([i]) for i in range(self.INITIAL_VOCAB_SIZE)}
-        self.inverse_vocab = {bytes([i]): i for i in range(self.INITIAL_VOCAB_SIZE)}
+        self.inverse_vocab = {
+            bytes([i]): i for i in range(self.INITIAL_VOCAB_SIZE)
+        }
 
         next_token = self.INITIAL_VOCAB_SIZE
 
-        with tqdm(total=self.vocab_size - next_token, desc="Training BPE") as pbar:
+        with tqdm(
+            total=self.vocab_size - next_token, desc="Training BPE"
+        ) as pbar:
             while next_token < self.vocab_size:
                 pair = Counter(zip(tokens, tokens[1:])).most_common(1)[0][0]
                 new_token = self.vocab[pair[0]] + self.vocab[pair[1]]
@@ -80,7 +93,7 @@ class Tokenizer:
         encoded = []
         i = 0
         while i < len(tokens):
-            substr = bytes(tokens[i:i+2])
+            substr = bytes(tokens[i : i + 2])
             if substr in self.inverse_vocab:
                 encoded.append(self.inverse_vocab[substr])
                 i += 2
@@ -112,9 +125,13 @@ class Tokenizer:
 
         tokenizer = cls()
         tokenizer.vocab_size = data["vocab_size"]
-        tokenizer.merges = {tuple(map(int, k.split(","))): v for k, v in data["merges"].items()}
+        tokenizer.merges = {
+            tuple(map(int, k.split(","))): v for k, v in data["merges"].items()
+        }
         tokenizer.vocab = {int(k): bytes(v) for k, v in data["vocab"].items()}
-        tokenizer.inverse_vocab = {bytes(v): int(k) for k, v in data["vocab"].items()}
+        tokenizer.inverse_vocab = {
+            bytes(v): int(k) for k, v in data["vocab"].items()
+        }
 
         return tokenizer
 
