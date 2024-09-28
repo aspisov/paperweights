@@ -3,7 +3,7 @@
 This folder contains a trained GPT2 model with BPE tokenization trained on Tiny-Stories.
 
 ## Dataset
-The Tiny-Stories dataset is a collection of short stories used to train the GPT2 model. [Provide more details about the dataset here.]
+The [Tiny-Stories dataset](https://arxiv.org/abs/2305.07759) is a collection of short stories used to train the GPT2 model.
 
 ## Tokenization
 `tokenizer.py` contains my implementation of BPE GPT4o tokenizer from scratch.
