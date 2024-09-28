@@ -1,11 +1,28 @@
 # GPT2
 
-This folder contains a trained GPT2 model with BPE tokenization trained on Tiny-Stories
+This folder contains a trained GPT2 model with BPE tokenization trained on Tiny-Stories.
 
 ## Dataset
+The Tiny-Stories dataset is a collection of short stories used to train the GPT2 model. [Provide more details about the dataset here.]
 
 ## Tokenization
-Current implementation is using GPT4o regex expression for tokenization which is mostly optimized for working with 
+`tokenizer.py` contains my implementation of BPE GPT4o tokenizer from scratch.
+A pretrained tokenizer on the TinyStories dataset is available on the Huggingface model hub [here](https://huggingface.co/aspisov/gpt2-tinystories-tokenizer).
+
+## Usage
+To use the pretrained tokenizer, follow these steps:
+1. Install the required libraries:
+	```bash
+	pip install transformers
+	```
+2. Load the model and tokenizer:
+	```python
+	from transformers import AutoTokenizer
+
+	tokenizer = AutoTokenizer.from_pretrained('aspisov/gpt2-tinystories-tokenizer')
+	```
+
+## Model
 
 # References
 - [YSDA Lena Voita lecture](https://github.com/yandexdataschool/nlp_course/tree/2024/week04_seq2seq)
