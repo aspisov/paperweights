@@ -10,7 +10,7 @@ Paperweights is a repository dedicated to the reimplementations of research pape
 - [BERT fine-tuned on emotion detection](BERT/README.md)
 - [LSTM Language Model trained on TinyStories](LSTMLanguageModel/README.md)
 - [Convolutional Neural Networks for Sentence Classification](CNNClassification/README.md)
-- [Word2Vec](Word2Vec/README.md): still working on efficiency
+- [Word2Vec](Word2Vec/README.md)
 - [Distributed Representations of Words and Phrases and Their Compositionality](NEGSkipGram/README.md)
 - [A Neural Probabilistic Language Model](NPLM/README.md)
 
