@@ -6,8 +6,8 @@ Paperweights is a repository dedicated to the reimplementations of research pape
 
 ## Available Paper Reimplementations
 
+- [LoRA](LoRA/README.md): work in progress
 - [GPT2](GPT2/README.md): work in progress
-- [BERT fine-tuned on emotion detection](BERT/README.md)
 - [LSTM Language Model trained on TinyStories](LSTMLanguageModel/README.md)
 - [Convolutional Neural Networks for Sentence Classification](CNNClassification/README.md)
 - [Word2Vec](Word2Vec/README.md)
